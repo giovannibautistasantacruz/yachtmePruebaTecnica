@@ -1,0 +1,107 @@
+﻿@page "/todolist"
+@inject TodoService TodoService
+@using PruebaYachtmeBlazor.Models
+
+<h3>To-Do List</h3>
+
+<button class="btn btn-primary mb-3" @onclick="ShowAddModal">Add New Item</button>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var todo in todos)
+        {
+            <tr>
+                <td>@todo.Name</td>
+                <td>@todo.Description</td>
+                <td>@todo.DueDate.ToShortDateString()</td>
+                <td>@(todo.Status == 1 ? "Active" : "Expired")</td>
+                <td>
+                    @if (todo.Status != 3)
+                    {
+                        <button class="btn btn-success" @onclick="() => MarkAsDone(todo.Id)">Done</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade @(isAddModalOpen ? "show" : "")" tabindex="-1" role="dialog" style="display:@(isAddModalOpen ? "block" : "none");" aria-labelledby="addModalLabel" aria-hidden="@(isAddModalOpen ? "false" : "true")">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModalLabel">Add New Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="HideAddModal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" @bind="newItem.Name" />
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" class="form-control" id="description" @bind="newItem.Description" />
+                </div>
+                <div class="form-group">
+                    <label for="dueDate">Due Date</label>
+                    <input type="date" class="form-control" id="dueDate" @bind="newItem.DueDate" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="HideAddModal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="AddTodo">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Item> todos = new List<Item>();
+    private AddTodoItem newItem = new AddTodoItem();
+    private bool isAddModalOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        todos = await TodoService.GetTodosAsync();
+    }
+
+    private void ShowAddModal()
+    {
+        newItem = new AddTodoItem(); // Asegúrate de inicializar aquí también
+        isAddModalOpen = true;
+    }
+
+    private void HideAddModal()
+    {
+        isAddModalOpen = false;
+    }
+
+    private async Task AddTodo()
+    {
+        if (await TodoService.AddTodoAsync(newItem))
+        {
+            todos = await TodoService.GetTodosAsync();
+            HideAddModal();
+        }
+    }
+
+    private async Task MarkAsDone(int id)
+    {
+        if (await TodoService.MarkAsDoneAsync(id))
+        {
+            todos = await TodoService.GetTodosAsync();
+        }
+    }
+}
